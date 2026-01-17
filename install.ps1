@@ -11,8 +11,18 @@ $Workflows = @(
     "brainstorm.md", "next.md", "customize.md", "README.md"
 )
 
+# Schemas and Templates (v3.3+)
+$Schemas = @(
+    "brain.schema.json", "session.schema.json", "preferences.schema.json"
+)
+$Templates = @(
+    "brain.example.json", "session.example.json", "preferences.example.json"
+)
+
 # Detect Antigravity Global Path
 $AntigravityGlobal = "$env:USERPROFILE\.gemini\antigravity\global_workflows"
+$SchemasDir = "$env:USERPROFILE\.gemini\antigravity\schemas"
+$TemplatesDir = "$env:USERPROFILE\.gemini\antigravity\templates"
 $GeminiMd = "$env:USERPROFILE\.gemini\GEMINI.md"
 $AwfVersionFile = "$env:USERPROFILE\.gemini\awf_version"
 
@@ -20,7 +30,7 @@ $AwfVersionFile = "$env:USERPROFILE\.gemini\awf_version"
 try {
     $CurrentVersion = (Invoke-WebRequest -Uri "$RepoBase/VERSION" -UseBasicParsing).Content.Trim()
 } catch {
-    $CurrentVersion = "3.1.0"
+    $CurrentVersion = "3.4.0"
 }
 
 Write-Host ""
@@ -57,14 +67,44 @@ foreach ($wf in $Workflows) {
     }
 }
 
-# 2. Save version
+# 2. Download Schemas (v3.3+)
+if (-not (Test-Path $SchemasDir)) {
+    New-Item -ItemType Directory -Force -Path $SchemasDir | Out-Null
+}
+Write-Host "⏳ Đang tải schemas..." -ForegroundColor Cyan
+foreach ($schema in $Schemas) {
+    try {
+        Invoke-WebRequest -Uri "$RepoBase/schemas/$schema" -OutFile "$SchemasDir\$schema" -ErrorAction Stop
+        Write-Host "   ✅ $schema" -ForegroundColor Green
+        $success++
+    } catch {
+        Write-Host "   ❌ $schema" -ForegroundColor Red
+    }
+}
+
+# 3. Download Templates (v3.3+)
+if (-not (Test-Path $TemplatesDir)) {
+    New-Item -ItemType Directory -Force -Path $TemplatesDir | Out-Null
+}
+Write-Host "⏳ Đang tải templates..." -ForegroundColor Cyan
+foreach ($template in $Templates) {
+    try {
+        Invoke-WebRequest -Uri "$RepoBase/templates/$template" -OutFile "$TemplatesDir\$template" -ErrorAction Stop
+        Write-Host "   ✅ $template" -ForegroundColor Green
+        $success++
+    } catch {
+        Write-Host "   ❌ $template" -ForegroundColor Red
+    }
+}
+
+# 4. Save version
 if (-not (Test-Path "$env:USERPROFILE\.gemini")) {
     New-Item -ItemType Directory -Force -Path "$env:USERPROFILE\.gemini" | Out-Null
 }
 Set-Content -Path $AwfVersionFile -Value $CurrentVersion -Encoding UTF8
 Write-Host "✅ Đã lưu version: $CurrentVersion" -ForegroundColor Green
 
-# 3. Update Global Rules (GEMINI.md)
+# 5. Update Global Rules (GEMINI.md)
 $AwfInstructions = @"
 
 # AWF - Antigravity Workflow Framework
@@ -94,6 +134,10 @@ Bạn PHẢI đọc file workflow tương ứng và thực hiện theo hướng 
 | ``/rollback`` | ~/.gemini/antigravity/global_workflows/rollback.md | Rollback deployment |
 | ``/cloudflare-tunnel`` | ~/.gemini/antigravity/global_workflows/cloudflare-tunnel.md | Quản lý tunnel |
 | ``/awf-update`` | ~/.gemini/antigravity/global_workflows/awf-update.md | Cập nhật AWF |
+
+## Resource Locations (v3.3+):
+- Schemas: ~/.gemini/antigravity/schemas/
+- Templates: ~/.gemini/antigravity/templates/
 
 ## Hướng dẫn thực hiện:
 1. Khi user gõ một trong các commands trên, ĐỌC FILE WORKFLOW tương ứng
@@ -125,8 +169,12 @@ if (-not (Test-Path $GeminiMd)) {
 
 Write-Host ""
 Write-Host "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━" -ForegroundColor DarkGray
-Write-Host "🎉 HOÀN TẤT! Đã cài $success workflows vào hệ thống." -ForegroundColor Yellow
+Write-Host "🎉 HOÀN TẤT! Đã cài $success files vào hệ thống." -ForegroundColor Yellow
 Write-Host "📦 Version: $CurrentVersion" -ForegroundColor Cyan
+Write-Host ""
+Write-Host "📂 Workflows: $AntigravityGlobal" -ForegroundColor DarkGray
+Write-Host "📂 Schemas:   $SchemasDir" -ForegroundColor DarkGray
+Write-Host "📂 Templates: $TemplatesDir" -ForegroundColor DarkGray
 Write-Host ""
 Write-Host "👉 Bạn có thể dùng AWF ở BẤT KỲ project nào ngay lập tức!" -ForegroundColor Cyan
 Write-Host "👉 Thử gõ '/plan' để kiểm tra." -ForegroundColor White

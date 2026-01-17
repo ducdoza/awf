@@ -12,13 +12,23 @@ WORKFLOWS=(
     "brainstorm.md" "next.md" "customize.md" "README.md"
 )
 
+# Schemas and Templates (v3.3+)
+SCHEMAS=(
+    "brain.schema.json" "session.schema.json" "preferences.schema.json"
+)
+TEMPLATES=(
+    "brain.example.json" "session.example.json" "preferences.example.json"
+)
+
 # Detect paths
 ANTIGRAVITY_GLOBAL="$HOME/.gemini/antigravity/global_workflows"
+SCHEMAS_DIR="$HOME/.gemini/antigravity/schemas"
+TEMPLATES_DIR="$HOME/.gemini/antigravity/templates"
 GEMINI_MD="$HOME/.gemini/GEMINI.md"
 AWF_VERSION_FILE="$HOME/.gemini/awf_version"
 
 # Get version from repo
-CURRENT_VERSION=$(curl -s "$REPO_BASE/VERSION" 2>/dev/null || echo "3.1.0")
+CURRENT_VERSION=$(curl -s "$REPO_BASE/VERSION" 2>/dev/null || echo "3.4.0")
 
 echo ""
 echo "╔══════════════════════════════════════════════════════════╗"
@@ -49,12 +59,36 @@ for wf in "${WORKFLOWS[@]}"; do
     fi
 done
 
-# 2. Save version
+# 2. Download Schemas (v3.3+)
+mkdir -p "$SCHEMAS_DIR"
+echo "⏳ Đang tải schemas..."
+for schema in "${SCHEMAS[@]}"; do
+    if curl -f -s -o "$SCHEMAS_DIR/$schema" "$REPO_BASE/schemas/$schema"; then
+        echo "   ✅ $schema"
+        ((success++))
+    else
+        echo "   ❌ $schema"
+    fi
+done
+
+# 3. Download Templates (v3.3+)
+mkdir -p "$TEMPLATES_DIR"
+echo "⏳ Đang tải templates..."
+for template in "${TEMPLATES[@]}"; do
+    if curl -f -s -o "$TEMPLATES_DIR/$template" "$REPO_BASE/templates/$template"; then
+        echo "   ✅ $template"
+        ((success++))
+    else
+        echo "   ❌ $template"
+    fi
+done
+
+# 4. Save version
 mkdir -p "$HOME/.gemini"
 echo "$CURRENT_VERSION" > "$AWF_VERSION_FILE"
 echo "✅ Đã lưu version: $CURRENT_VERSION"
 
-# 3. Update Global Rules
+# 5. Update Global Rules
 AWF_INSTRUCTIONS='
 # AWF - Antigravity Workflow Framework
 
@@ -83,6 +117,10 @@ Bạn PHẢI đọc file workflow tương ứng và thực hiện theo hướng 
 | `/rollback` | ~/.gemini/antigravity/global_workflows/rollback.md | Rollback deployment |
 | `/cloudflare-tunnel` | ~/.gemini/antigravity/global_workflows/cloudflare-tunnel.md | Quản lý tunnel |
 | `/awf-update` | ~/.gemini/antigravity/global_workflows/awf-update.md | Cập nhật AWF |
+
+## Resource Locations (v3.3+):
+- Schemas: ~/.gemini/antigravity/schemas/
+- Templates: ~/.gemini/antigravity/templates/
 
 ## Hướng dẫn thực hiện:
 1. Khi user gõ một trong các commands trên, ĐỌC FILE WORKFLOW tương ứng
@@ -113,8 +151,12 @@ fi
 
 echo ""
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-echo "🎉 HOÀN TẤT! Đã cài $success workflows vào hệ thống."
+echo "🎉 HOÀN TẤT! Đã cài $success files vào hệ thống."
 echo "📦 Version: $CURRENT_VERSION"
+echo ""
+echo "📂 Workflows: $ANTIGRAVITY_GLOBAL"
+echo "📂 Schemas:   $SCHEMAS_DIR"
+echo "📂 Templates: $TEMPLATES_DIR"
 echo ""
 echo "👉 Bạn có thể dùng AWF ở BẤT KỲ project nào ngay lập tức!"
 echo "👉 Thử gõ '/plan' để kiểm tra."
